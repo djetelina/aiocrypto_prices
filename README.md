@@ -32,7 +32,7 @@ Careful, if you're not accessing the target price through `get`,
 it might not reload after cache expires
 ```python
 >> from aiocrypto_prices import currencies
->> currencies.add(['BTC', 'ETH', 'IOT'])
+>> currencies.add('BTC', 'ETH', 'IOT')
 >> await currencies.load_all()
 >> currencies.IOT.prices.USD
 2.79
