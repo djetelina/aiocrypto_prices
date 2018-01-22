@@ -5,7 +5,7 @@ from typing import List, Any, Dict
 import aiohttp
 
 
-_coin_list = {}
+_coin_list: Dict[str, Any] = {}
 
 
 async def fetch(url: str) -> Dict[str, Any]:

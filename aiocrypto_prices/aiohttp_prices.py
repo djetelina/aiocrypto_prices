@@ -1,10 +1,11 @@
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, Awaitable
 
 import asyncio
 
 import time
 
 from aiocrypto_prices._api_requests import fetch_price_data, fetch_coin_list
+from exceptions import CurrencyNotFound
 
 
 class Prices:
@@ -27,8 +28,8 @@ class Prices:
         try:
             return self._prices[item.upper()]
         except KeyError:
-            raise Exception("Desired target currency not found, make sure it's in desired_currencies "
-                            "and that cryptocompare.com supports it.")
+            raise CurrencyNotFound("Desired target currency not found, make sure it's in desired_currencies "
+                                   "and that cryptocompare.com supports it.")
 
     def __setitem__(self, key: str, value: float) -> None:
         self._prices[key.upper()] = value
@@ -49,7 +50,7 @@ class Currency:
         self.extra_information = extra_information
         self.last_loaded: Union[bool, float] = False
         self.prices = Prices(self)
-        self.extra_data = {}
+        self.extra_data: Dict[str, Any] = {}
 
     @property
     def image_url(self) -> str:
@@ -65,7 +66,7 @@ class Currency:
 
     async def load(self) -> None:
         """Loads the data if they are not cached"""
-        tasks = []
+        tasks: List[Awaitable[Any]] = []
         if not self.last_loaded:
             if self.extra_information:
                 tasks.append(fetch_coin_list())
@@ -76,7 +77,7 @@ class Currency:
 
         if self.extra_information:
             extra_data = await fetch_coin_list()
-            self.extra_data = extra_data.get(self.symbol)
+            self.extra_data = extra_data.get(self.symbol, {})
         self.last_loaded = time.time()
 
     async def __load(self) -> None:
