@@ -12,17 +12,21 @@ class Prices:
     """Prices object"""
     def __init__(self, currency: 'Currency') -> None:
         self._prices: Dict[str, float] = {}
-        self.currency = currency
+        self._currency = currency
 
-    async def get(self, currency: str, default: Any=None) -> Any:
+    async def get(self, target_currency: str, default: Any=None) -> Any:
         """
         Gets the price for a specified currency, if currency is not in target currencies,
         it's added there for the specific currency
+
+        :param target_currency:     Currency to get converted price for
+        :param default:             What to return if the desired currency is not found in fetched prices
         """
-        if currency not in self.currency.target_currencies:
-            self.currency.target_currencies.append(currency.upper())
-        await self.currency.load()
-        return self._prices.get(currency, default)
+        target_currency = target_currency.upper()
+        if target_currency not in self._currency.target_currencies:
+            self._currency.target_currencies.append(target_currency)
+        await self._currency.load()
+        return self._prices.get(target_currency, default)
 
     def __getitem__(self, item: str) -> float:
         try:
@@ -44,6 +48,12 @@ class Currency:
     """
     def __init__(self, symbol: str, cache: int=60, target_currencies: List[str]=None,
                  extra_information: bool=False) -> None:
+        """
+        :param symbol:              Symbol of the currency (e.g. ZEC) - will be converted to uppercase automatically
+        :param cache:               Seconds to keep prices in cache
+        :param target_currencies:   Which currencies to convert prices to
+        :param extra_information:   Whether to fetch extra information (name and url for a logo)
+        """
         self.symbol = symbol.upper()
         self.cache = cache
         self.target_currencies = target_currencies or ['USD', 'BTC']
@@ -75,7 +85,7 @@ class Currency:
 
         await asyncio.gather(*tasks)
 
-        if self.extra_information:
+        if self.extra_information and not self.extra_data:
             extra_data = await fetch_coin_list()
             self.extra_data = extra_data.get(self.symbol, {})
         self.last_loaded = time.time()
@@ -96,6 +106,11 @@ class Currencies:
     """
     def __init__(self, cache: int=60, target_currencies: List[str]=None,
                  extra_information: bool=False) -> None:
+        """
+        :param cache:               Seconds to keep prices in cache
+        :param target_currencies:   Which currencies to convert prices to
+        :param extra_information:   Whether to fetch extra information (name and url for a logo)
+        """
         self.currencies: Dict[str, Currency] = dict()
         self.cache = cache
         self.target_currencies = target_currencies or ['USD', 'BTC', 'ETH']
@@ -113,10 +128,11 @@ class Currencies:
             currency.prices._prices.update(price_data.get(symbol, {}))
             currency.last_loaded = time.time()
             if self.extra_information:
+                # Update the currency with already fetched extra information
                 await currency.load()
 
     def add(self, *symbols: str) -> None:
-        """Add a list of symbols for which to load prices"""
+        """Add to the list of symbols for which to load prices"""
         for symbol in symbols:
             if symbol not in self.currencies:
                 self.currencies[symbol] = Currency(symbol,

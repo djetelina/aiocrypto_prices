@@ -37,3 +37,19 @@ it might not reload after cache expires
 >> currencies.IOT.prices.USD
 2.79
 ```
+
+### Setting up extra options
+
+```python
+>>> from aiocrypto_prices import currencies
+>>> currencies.cache = 120  # 2 minute cache
+>>> currencies.target_currencies.append('EUR') # In addition to defaults, let's fetch EUR too.
+>>> currencies.extra_information = True	# Get name and url of a logo
+```
+
+or
+
+```python
+>>> from aiocrypto_prices import Currencies
+>>> currencies = Currencies(cache=120, target_currencies=['USD', 'EUR'], extra_information=True)
+```
