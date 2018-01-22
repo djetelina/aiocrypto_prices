@@ -17,19 +17,19 @@ class Prices:
         it's added there for the specific currency
         """
         if currency not in self.currency.target_currencies:
-            self.currency.target_currencies.append(currency)
+            self.currency.target_currencies.append(currency.upper())
         await self.currency.load()
         return self._prices.get(currency, default)
 
     def __getitem__(self, item: str) -> float:
         try:
-            return self._prices[item]
+            return self._prices[item.upper()]
         except KeyError:
             raise Exception("Desired target currency not found, make sure it's in desired_currencies "
                             "and that cryptocompare.com supports it.")
 
     def __setitem__(self, key: str, value: float) -> None:
-        self._prices[key] = value
+        self._prices[key.upper()] = value
 
     def __getattr__(self, item: str) -> float:
         return self[item]
@@ -39,8 +39,8 @@ class Currency:
     """
     Currency object
     """
-    def __init__(self, symbol, cache: int=60, target_currencies: List[str]=None) -> None:
-        self.symbol = symbol
+    def __init__(self, symbol: str, cache: int=60, target_currencies: List[str]=None) -> None:
+        self.symbol = symbol.upper()
         self.cache = cache
         self.target_currencies = target_currencies or ['USD', 'BTC']
         self.last_loaded = False
@@ -91,8 +91,8 @@ class Currencies:
     def __getitem__(self, item: str) -> Currency:
         """Gets a currency, if not present, will create one"""
         if item not in self.currencies:
-            self.currencies[item] = Currency(item, cache=self.cache, target_currencies=self.target_currencies)
-        return self.currencies[item]
+            self.currencies[item.upper()] = Currency(item, cache=self.cache, target_currencies=self.target_currencies)
+        return self.currencies[item.upper()]
 
     def __getattr__(self, item: str) -> Currency:
         """Same as getitem, but accessible with dots"""
