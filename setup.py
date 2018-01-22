@@ -17,7 +17,7 @@ with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='aiocrypto_prices',
-      version='0.0.2',
+      version='0.0.2.1',
       description='asyncio cryptocurrency prices library',
       long_description=long_description,
       url='',
