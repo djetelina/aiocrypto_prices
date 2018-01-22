@@ -5,7 +5,7 @@ import asyncio
 import time
 
 from aiocrypto_prices._api_requests import fetch_price_data, fetch_coin_list
-from exceptions import CurrencyNotFound
+from aiocrypto_prices.exceptions import CurrencyNotFound
 
 
 class Prices:
