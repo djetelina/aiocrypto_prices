@@ -4,3 +4,7 @@ class CryptoPriceException(Exception):
 
 class CurrencyNotFound(CryptoPriceException):
     pass
+
+
+class UnfetchedInformation(CryptoPriceException):
+    pass

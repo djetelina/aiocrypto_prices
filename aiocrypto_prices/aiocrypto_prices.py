@@ -1,11 +1,19 @@
-from typing import List, Any, Dict, Union, Awaitable
-
 import asyncio
-
 import time
+from typing import List, Any, Dict, Union, Awaitable, Optional
+
+from mypy_extensions import TypedDict
 
 from aiocrypto_prices._api_requests import fetch_price_data, fetch_coin_list
-from aiocrypto_prices.exceptions import CurrencyNotFound
+from aiocrypto_prices.exceptions import CurrencyNotFound, UnfetchedInformation
+
+CURRENCY_KWARGS = TypedDict('CurrencyKwargs', {
+    'cache': int,
+    'target_currencies': List[str],
+    'full': bool,
+    'historical': Optional[str],
+    'human': bool
+})
 
 
 class Prices:
@@ -47,47 +55,65 @@ class Currency:
     Currency object
     """
     def __init__(self, symbol: str, cache: int=60, target_currencies: List[str]=None,
-                 extra_information: bool=False) -> None:
+                 full: bool = False, historical: Optional[str] = None, human: bool = False) -> None:
         """
         :param symbol:              Symbol of the currency (e.g. ZEC) - will be converted to uppercase automatically
         :param cache:               Seconds to keep prices in cache
         :param target_currencies:   Which currencies to convert prices to
-        :param extra_information:   Whether to fetch extra information (name and url for a logo)
+        :param full:                Whether to fetch full data, like change, market cap, volume etc.
+        :param historical:          Whether to fetch movement data, either None, or 'minute', 'hour', 'day'
+        :param human:               Whether to fetch information that concern humans (logo, full name)
         """
         self.symbol = symbol.upper()
         self.cache = cache
         self.target_currencies = target_currencies or ['USD', 'BTC']
-        self.extra_information = extra_information
         self.last_loaded: Union[bool, float] = False
         self.prices = Prices(self)
-        self.extra_data: Dict[str, Any] = {}
+        self.full = full
+        self.historical = historical
+        self.human = human
+        self.human_data: Dict[str, Any] = {}
 
     @property
     def image_url(self) -> str:
-        """Available only if extra_information is True - url to a image of currency's logo"""
-        if not self.extra_data:
-            return ''
-        return f'https://www.cryptocompare.com{self.extra_data.get("ImageUrl")}'
+        """Available only if human is True - url to a image of currency's logo"""
+        if not self.human:
+            raise UnfetchedInformation('human must be True to fetch image_url')
+        return f'https://www.cryptocompare.com{self.human_data.get("ImageUrl")}'
 
     @property
     def name(self) -> str:
-        """Available only if extra_information is True - name of the currency (e.g. Bitcoin from BTC)"""
-        return self.extra_data.get('CoinName', '')
+        """Available only if human is True - name of the currency (e.g. Bitcoin from BTC)"""
+        if not self.human:
+            raise UnfetchedInformation('human must be True to fetch name')
+        return self.human_data.get('CoinName', '')
+
+    @property
+    def supply(self):
+        raise NotImplementedError
+
+    @property
+    def market_cap(self):
+        raise NotImplementedError
+
+    def volume(self):
+        raise NotImplementedError
 
     async def load(self) -> None:
         """Loads the data if they are not cached"""
         tasks: List[Awaitable[Any]] = []
         if not self.last_loaded:
-            if self.extra_information:
+            if self.human:
                 tasks.append(fetch_coin_list())
-            if self.last_loaded < self.last_loaded + self.cache:
-                tasks.append(self.__load())
+
+        if time.time() < self.last_loaded + self.cache:
+            tasks.append(self.__load())
 
         await asyncio.gather(*tasks)
 
-        if self.extra_information and not self.extra_data:
+        if self.human and not self.human_data:
             extra_data = await fetch_coin_list()
-            self.extra_data = extra_data.get(self.symbol, {})
+            self.human_data = extra_data.get(self.symbol, {})
         self.last_loaded = time.time()
 
     async def __load(self) -> None:
@@ -105,29 +131,38 @@ class Currencies:
     and set their parameters manually.
     """
     def __init__(self, cache: int=60, target_currencies: List[str]=None,
-                 extra_information: bool=False) -> None:
+                 full: bool=False, historical: Optional[str]=None, human: bool=False) -> None:
         """
         :param cache:               Seconds to keep prices in cache
         :param target_currencies:   Which currencies to convert prices to
-        :param extra_information:   Whether to fetch extra information (name and url for a logo)
+        :param full:                Whether to fetch full data, like change, market cap, volume etc.
+                                    TODO https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD,BTC
+        :param historical:          Whether to fetch movement data, either None, or 'minute', 'hour', 'day'
+                                    TODO https://min-api.cryptocompare.com/data/histominute?fsym=BTC&tsym=USD&limit=60&aggregate=3&e=CCCAGG
+                                    TODO aggregate -> po kolika minutach, cas je v timestampech
+                                    Bonusove argumenty v metode a vracet jen metodou?
+        :param human:               Whether to fetch information that concern humans (logo, full name)
         """
         self.currencies: Dict[str, Currency] = dict()
         self.cache = cache
         self.target_currencies = target_currencies or ['USD', 'BTC', 'ETH']
-        self.extra_information = extra_information
+        self.full = full
+        self.historical = historical
+        self.human = human
 
     async def load_all(self) -> None:
         """Loads data for all currencies"""
         symbols = []
         for _, currency in self.currencies.items():
             symbols.append(currency.symbol)
-        if self.extra_information:
+        if self.human:
+            # This is done just once, as the contents don't change
             await fetch_coin_list()
         price_data = await fetch_price_data(symbols, self.target_currencies)
         for symbol, currency in self.currencies.items():
             currency.prices._prices.update(price_data.get(symbol, {}))
             currency.last_loaded = time.time()
-            if self.extra_information:
+            if self.human:
                 # Update the currency with already fetched extra information
                 await currency.load()
 
@@ -135,17 +170,24 @@ class Currencies:
         """Add to the list of symbols for which to load prices"""
         for symbol in symbols:
             if symbol not in self.currencies:
-                self.currencies[symbol] = Currency(symbol,
-                                                   cache=self.cache,
-                                                   target_currencies=self.target_currencies,
-                                                   extra_information=self.extra_information)
+                self.currencies[symbol] = Currency(symbol, **self.__currency_kwargs)
+
+    @property
+    def __currency_kwargs(self) -> CURRENCY_KWARGS:
+        """All kwargs that are propagated to individual currencies"""
+        return {
+            'cache': self.cache,
+            'target_currencies': self.target_currencies,
+            'full': self.full,
+            'historical': self.historical,
+            'human': self.human
+        }
 
     def __getitem__(self, item: str) -> Currency:
         """Gets a currency, if not present, will create one"""
         item = item.upper()
         if item not in self.currencies:
-            self.currencies[item] = Currency(item, cache=self.cache, target_currencies=self.target_currencies,
-                                             extra_information=self.extra_information)
+            self.currencies[item] = Currency(item, **self.__currency_kwargs)
         return self.currencies[item]
 
     def __getattr__(self, item: str) -> Currency:
