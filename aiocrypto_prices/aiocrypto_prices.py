@@ -34,11 +34,12 @@ class Prices:
         if target_currency not in self._currency.target_currencies:
             self._currency.target_currencies.append(target_currency)
         await self._currency.load()
-        return self._prices.get(target_currency, default)
+        # TODO float should be in the dict from when it's put there -> stop using .update() with data from api
+        return float(self._prices.get(target_currency, default))
 
     def __getitem__(self, item: str) -> float:
         try:
-            return self._prices[item.upper()]
+            return float(self._prices[item.upper()])
         except KeyError:
             raise CurrencyNotFound("Desired target currency not found, make sure it's in desired_currencies "
                                    "and that cryptocompare.com supports it.")
@@ -90,11 +91,12 @@ class Currency:
 
     @property
     def supply(self):
-        raise NotImplementedError
+        return self.full_data['USD']['SUPPLY']
 
     @property
     def market_cap(self):
-        raise NotImplementedError
+        # TODO should be in self.prices
+        return self.full_data['USD']['MKTCAP']
 
     def volume(self):
         raise NotImplementedError
@@ -106,7 +108,7 @@ class Currency:
             if self.human:
                 tasks.append(fetch_coin_list())
 
-        if time.time() < self.last_loaded + self.cache:
+        if not self.last_loaded or time.time() < self.last_loaded + self.cache:
             tasks.append(self.__load())
 
         await asyncio.gather(*tasks)
@@ -117,8 +119,14 @@ class Currency:
         self.last_loaded = time.time()
 
     async def __load(self) -> None:
-        json_data = await fetch_price_data([self.symbol], self.target_currencies)
-        self.prices._prices.update(json_data)
+        json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
+        if self.full:
+            self.full_data = json_data
+            for tsym, data in self.prices._prices:
+                if self.full_data.get(tsym):
+                    self.prices._prices[tsym] = self.full_data.get(tsym).get('PRICE')
+        else:
+            self.prices._prices.update(json_data.get(self.symbol, {}))
 
 
 class Currencies:
@@ -136,7 +144,6 @@ class Currencies:
         :param cache:               Seconds to keep prices in cache
         :param target_currencies:   Which currencies to convert prices to
         :param full:                Whether to fetch full data, like change, market cap, volume etc.
-                                    TODO https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD,BTC
         :param historical:          Whether to fetch movement data, either None, or 'minute', 'hour', 'day'
                                     TODO https://min-api.cryptocompare.com/data/histominute?fsym=BTC&tsym=USD&limit=60&aggregate=3&e=CCCAGG
                                     TODO aggregate -> po kolika minutach, cas je v timestampech
@@ -158,8 +165,9 @@ class Currencies:
         if self.human:
             # This is done just once, as the contents don't change
             await fetch_coin_list()
-        price_data = await fetch_price_data(symbols, self.target_currencies)
+        price_data = await fetch_price_data(symbols, self.target_currencies, full=self.full)
         for symbol, currency in self.currencies.items():
+            # TODO !!!!
             currency.prices._prices.update(price_data.get(symbol, {}))
             currency.last_loaded = time.time()
             if self.human:
