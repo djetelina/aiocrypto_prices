@@ -2,6 +2,9 @@
 
 Very early version - API WILL CHANGE!
 
+If you happen to stumble upon this library, please provide any and all feedback
+through any means comfortable to you.
+
 ## Install
 
 `$ pipenv install aiocrypto_prices`
@@ -53,3 +56,23 @@ or
 >>> from aiocrypto_prices import Currencies
 >>> currencies = Currencies(cache=120, target_currencies=['USD', 'EUR'], extra_information=True)
 ```
+
+## Changelog
+
+### 0.0.3
+
+* extra_information parameter was renamed to human
+* new paramter 'full' providing market cap and supply
+	* More data should be provided with 'full', but requires a redesign of Prices class
+
+## TODO
+
+* all the TODOs scattered around the code
+* All the available information cryptocompare offers
+* Assign amount in that currency? - perhaps aiocrypto_folio?
+	* Implement adding together currencies of the same symbol and possibly other interactions
+
+
+
+* aiocrypto_exchanges
+* aiocrypto_pools

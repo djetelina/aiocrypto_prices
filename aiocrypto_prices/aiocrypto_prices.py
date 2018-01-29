@@ -90,13 +90,17 @@ class Currency:
         return self.human_data.get('CoinName', '')
 
     @property
-    def supply(self):
-        return self.full_data['USD']['SUPPLY']
+    def supply(self) -> float:
+        if not self.full:
+            raise UnfetchedInformation('full must be True to fetch supply')
+        return float(self.full_data['USD']['SUPPLY'])
 
     @property
-    def market_cap(self):
+    def market_cap(self) -> float:
         # TODO should be in self.prices
-        return self.full_data['USD']['MKTCAP']
+        if not self.full:
+            raise UnfetchedInformation('full must be True to fetch market_cap')
+        return float(self.full_data['USD']['MKTCAP'])
 
     def volume(self):
         raise NotImplementedError
@@ -121,7 +125,7 @@ class Currency:
     async def __load(self) -> None:
         json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
         if self.full:
-            self.full_data = json_data
+            self.full_data = json_data.get(self.symbol)
             for tsym, data in self.prices._prices:
                 if self.full_data.get(tsym):
                     self.prices._prices[tsym] = self.full_data.get(tsym).get('PRICE')
@@ -165,9 +169,11 @@ class Currencies:
         if self.human:
             # This is done just once, as the contents don't change
             await fetch_coin_list()
+        # TODO fetch only if at least one isn't cached
         price_data = await fetch_price_data(symbols, self.target_currencies, full=self.full)
         for symbol, currency in self.currencies.items():
-            # TODO !!!!
+            if self.full:
+                currency.full_data = price_data.get(symbol)
             currency.prices._prices.update(price_data.get(symbol, {}))
             currency.last_loaded = time.time()
             if self.human:
