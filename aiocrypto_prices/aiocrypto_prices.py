@@ -154,6 +154,7 @@ class Currencies:
                                     TODO aggregate -> po kolika minutach, cas je v timestampech
                                     Bonusove argumenty v metode a vracet jen metodou?
         :param human:               Whether to fetch information that concern humans (logo, full name)
+                                    Will not work with classic currencies like USD or EUR
         """
         self.currencies: Dict[str, Currency] = dict()
         self.cache = cache

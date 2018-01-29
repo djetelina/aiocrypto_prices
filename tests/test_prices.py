@@ -72,3 +72,22 @@ async def test_full_multiple(symbols: List[str], symbol_to: str):
         currency: Currency = getattr(currencies, symbol)
         assert isinstance(currency.market_cap, float)
         assert isinstance(currency.supply, float)
+
+
+async def test_human(currencies: Currencies, symbol_from: str):
+    """
+    >>> from aiocrypto_prices import currencies
+    >>> currencies.human = True
+    >>> currencies.add('ETH')
+    >>> await currencies.load_all()
+    >>> currencies.ETH.name
+    'Ethereum'
+    >>> currencies.ETH.image_url
+    'https://www.cryptocompare.com/media/20646/eth_logo.png'
+    """
+    currencies.human = True
+    currencies.add(symbol_from)
+    await currencies.load_all()
+    if not symbol_from == 'USD':
+        assert getattr(currencies, symbol_from).name
+        assert getattr(currencies, symbol_from).image_url
