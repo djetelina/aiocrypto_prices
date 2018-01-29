@@ -47,7 +47,7 @@ it might not reload after cache expires
 >>> from aiocrypto_prices import currencies
 >>> currencies.cache = 120  # 2 minute cache
 >>> currencies.target_currencies.append('EUR') # In addition to defaults, let's fetch EUR too.
->>> currencies.extra_information = True	# Get name and url of a logo
+>>> currencies.human = True	# Get name and url of a logo
 ```
 
 or
