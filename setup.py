@@ -1,8 +1,5 @@
 from setuptools import setup, find_packages
-# noinspection PyPep8Naming
-from setuptools import Command
 from codecs import open
-import os
 import sys
 
 if sys.version_info.major < 3:

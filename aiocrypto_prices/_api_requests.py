@@ -30,7 +30,7 @@ async def fetch_price_data(from_currencies: List[str], to_currencies: List[str],
                 f'tsyms={",".join(to_currencies)}'
     resp = await fetch(price_url)
     if full:
-        resp = resp.get('RAW')
+        resp = resp['RAW']
     return resp
 
 

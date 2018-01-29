@@ -7,7 +7,7 @@ from mypy_extensions import TypedDict
 from aiocrypto_prices._api_requests import fetch_price_data, fetch_coin_list
 from aiocrypto_prices.exceptions import CurrencyNotFound, UnfetchedInformation
 
-CURRENCY_KWARGS = TypedDict('CurrencyKwargs', {
+CurrencyKwargs = TypedDict('CurrencyKwargs', {
     'cache': int,
     'target_currencies': List[str],
     'full': bool,
@@ -22,7 +22,7 @@ class Prices:
         self._prices: Dict[str, float] = {}
         self._currency = currency
 
-    async def get(self, target_currency: str, default: Any=None) -> Any:
+    async def get(self, target_currency: str, default: float=0.0) -> float:
         """
         Gets the price for a specified currency, if currency is not in target currencies,
         it's added there for the specific currency
@@ -74,6 +74,7 @@ class Currency:
         self.historical = historical
         self.human = human
         self.human_data: Dict[str, Any] = {}
+        self.full_data: Dict[str, Any] = {}
 
     @property
     def image_url(self) -> str:
@@ -125,10 +126,10 @@ class Currency:
     async def __load(self) -> None:
         json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
         if self.full:
-            self.full_data = json_data.get(self.symbol)
+            self.full_data = json_data.get(self.symbol, {})
             for tsym, data in self.prices._prices:
                 if self.full_data.get(tsym):
-                    self.prices._prices[tsym] = self.full_data.get(tsym).get('PRICE')
+                    self.prices._prices[tsym] = self.full_data.get(tsym, {}).get('PRICE')
         else:
             self.prices._prices.update(json_data.get(self.symbol, {}))
 
@@ -173,7 +174,7 @@ class Currencies:
         price_data = await fetch_price_data(symbols, self.target_currencies, full=self.full)
         for symbol, currency in self.currencies.items():
             if self.full:
-                currency.full_data = price_data.get(symbol)
+                currency.full_data = price_data.get(symbol, {})
             currency.prices._prices.update(price_data.get(symbol, {}))
             currency.last_loaded = time.time()
             if self.human:
@@ -187,7 +188,7 @@ class Currencies:
                 self.currencies[symbol] = Currency(symbol, **self.__currency_kwargs)
 
     @property
-    def __currency_kwargs(self) -> CURRENCY_KWARGS:
+    def __currency_kwargs(self) -> CurrencyKwargs:
         """All kwargs that are propagated to individual currencies"""
         return {
             'cache': self.cache,

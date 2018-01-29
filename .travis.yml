@@ -1,0 +1,15 @@
+os:
+- linux
+sudo: false
+language: python
+python:
+- "3.6"
+- "3.7-dev"
+install:
+- pip install pipenv
+- pipenv install --dev
+script:
+- pipenv check .
+- pipenv check --style .
+- pipenv run mypy aiocrypto_prices/ --ignore-missing-imports --strict-optional
+- pipenv run python -m pytest tests --cov=aiocrypto_prices -v --durations=5

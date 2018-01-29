@@ -17,6 +17,7 @@ mypy = "*"
 twine = "*"
 pytest = "*"
 pytest-asyncio = "*"
+pytest-coverage = "*"
 
 
 [requires]
