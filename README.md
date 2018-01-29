@@ -1,6 +1,6 @@
 # aiocrypto_prices
 
-![pypi](https://badge.fury.io/py/aiocrypto_prices.svg) [![build](https://travis-ci.org/iScrE4m/aiocrypto_prices.svg?branch=master)](https://travis-ci.org/iScrE4m/aiocrypto_prices)
+![pypi](https://badge.fury.io/py/aiocrypto-prices.svg) [![build](https://travis-ci.org/iScrE4m/aiocrypto_prices.svg?branch=master)](https://travis-ci.org/iScrE4m/aiocrypto_prices)
 
 Very early version - API WILL CHANGE!
 
@@ -9,11 +9,11 @@ through any means comfortable to you.
 
 ## Install
 
-`$ pipenv install aiocrypto_prices`
+`$ pipenv install aiocrypto-prices`
 
 or
 
-`$ pip install aiocrypto_prices --user`
+`$ pip install aiocrypto-prices --user`
 
 ## Usage
 
