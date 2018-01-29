@@ -1,6 +1,6 @@
 # aiocrypto_prices
 
-![pypi](https://badge.fury.io/py/aiocrypto_prices.svg) ![build](https://travis-ci.org/iScrE4m/aiocrypto_prices.svg?branch=master)
+![pypi](https://badge.fury.io/py/aiocrypto_prices.svg) [![build](https://travis-ci.org/iScrE4m/aiocrypto_prices.svg?branch=master)](https://travis-ci.org/iScrE4m/aiocrypto_prices)
 
 Very early version - API WILL CHANGE!
 
