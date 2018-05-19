@@ -56,7 +56,7 @@ or
 
 ```python
 >>> from aiocrypto_prices import Currencies
->>> currencies = Currencies(cache=120, target_currencies=['USD', 'EUR'], extra_information=True)
+>>> currencies = Currencies(cache=120, target_currencies=['USD', 'EUR'], human=True)
 ```
 
 ## Changelog
