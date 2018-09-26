@@ -1,7 +1,9 @@
 import asyncio
 import time
+from pathlib import Path
 from typing import List, Any, Dict, Union, Awaitable, Optional
 
+import toml
 from mypy_extensions import TypedDict
 
 from aiocrypto_prices._api_requests import fetch_price_data, fetch_coin_list
@@ -124,14 +126,25 @@ class Currency:
         self.last_loaded = time.time()
 
     async def __load(self) -> None:
-        json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
-        if self.full:
-            self.full_data = json_data.get(self.symbol, {})
-            for tsym, data in self.prices._prices:
-                if self.full_data.get(tsym):
-                    self.prices._prices[tsym] = self.full_data.get(tsym, {}).get('PRICE')
+        try:
+            json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
+        except Exception as _:
+            fallback = self.__load_fallback()
+            for tsym, _ in self.prices._prices:
+                self.prices._prices[tsym] = fallback[tsym]
         else:
-            self.prices._prices.update(json_data.get(self.symbol, {}))
+            if self.full:
+                self.full_data = json_data.get(self.symbol, {})
+                for tsym, _ in self.prices._prices.items():
+                    if self.full_data.get(tsym):
+                        self.prices._prices[tsym] = self.full_data.get(tsym, {}).get('PRICE')
+            else:
+                self.prices._prices.update(json_data.get(self.symbol, {}))
+
+    def __load_fallback(self):
+        fallback_toml = (Path(__file__).resolve().parent / 'fallbacks.tml')
+        with fallback_toml.open(mode='r') as f:
+            return toml.load(f)
 
 
 class Currencies:
