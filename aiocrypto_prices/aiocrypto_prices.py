@@ -130,12 +130,12 @@ class Currency:
             json_data = await fetch_price_data([self.symbol], self.target_currencies, full=self.full)
         except Exception as _:
             fallback = self.__load_fallback()
-            for tsym, _ in self.prices._prices:
+            for tsym, price in self.prices._prices:
                 self.prices._prices[tsym] = fallback[tsym]
         else:
             if self.full:
                 self.full_data = json_data.get(self.symbol, {})
-                for tsym, _ in self.prices._prices.items():
+                for tsym, price in self.prices._prices.items():
                     if self.full_data.get(tsym):
                         self.prices._prices[tsym] = self.full_data.get(tsym, {}).get('PRICE')
             else:
