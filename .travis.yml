@@ -11,6 +11,6 @@ script:
 # TODO https://github.com/pypa/pipenv/issues/1050
 #- pipenv check .
 
-- pipenv check --style .
+- pipenv run flake8 aiocrypto_prices/
 - pipenv run mypy aiocrypto_prices/ --ignore-missing-imports --strict-optional
 - pipenv run python -m pytest tests --cov=aiocrypto_prices -v --durations=5
